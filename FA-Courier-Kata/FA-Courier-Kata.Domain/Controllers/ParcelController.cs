@@ -1,4 +1,5 @@
-﻿using FA_Courier_Kata.Domain.Models;
+﻿using FA_Courier_Kata.Domain.Helpers;
+using FA_Courier_Kata.Domain.Models;
 using FA_Courier_Kata.Domain.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,9 +17,12 @@ namespace FA_Courier_Kata.Domain.Controllers
         }
 
         [HttpPost]
-        public decimal Post([FromBody] Parcel parcel)
+        public ParcelCost Post([FromBody] Parcel parcel)
         {
-            return _parcelService.CalculateParcelPostage(parcel);
+            var parcelCost = _parcelService.GetParcelCost(parcel);
+            var details = $"{parcelCost.ParcelSize.GetDescription()}: ${parcelCost.PostageCost}. Total Cost: ${parcelCost.PostageCost}";
+
+            return parcelCost;
         }
     }
 }

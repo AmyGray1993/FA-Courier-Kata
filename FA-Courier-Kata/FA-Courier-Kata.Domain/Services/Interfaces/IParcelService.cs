@@ -4,6 +4,6 @@ namespace FA_Courier_Kata.Domain.Services.Interfaces
 {
     public interface IParcelService
     {
-        decimal CalculateParcelPostage(Parcel parcel);
+        ParcelCost GetParcelCost(Parcel parcel);
     }
 }
