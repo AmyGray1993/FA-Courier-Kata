@@ -25,6 +25,11 @@ namespace FA_Courier_Kata.Domain
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "FA Courier Kata API", Version = "v1" });
+            });
+
             services.AddControllers();
         }
 
@@ -45,6 +50,13 @@ namespace FA_Courier_Kata.Domain
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+            });
+
+            app.UseSwagger();
+
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "FA Courier Kata API");
             });
         }
     }
