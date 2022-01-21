@@ -13,6 +13,10 @@ namespace FA_Courier_Kata.Domain.Models
 
         public ParcelSize ParcelSize;
 
+        public decimal ItemCost;
+
         public decimal PostageCost;
+
+        public decimal TotalCost => ItemCost + PostageCost;
     }
 }

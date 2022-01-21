@@ -1,4 +1,6 @@
-﻿using FA_Courier_Kata.Domain.Helpers;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using FA_Courier_Kata.Domain.Helpers;
 using FA_Courier_Kata.Domain.Models;
 using FA_Courier_Kata.Domain.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -17,11 +19,11 @@ namespace FA_Courier_Kata.Domain.Controllers
         }
 
         [HttpPost]
-        public string Post([FromBody] Parcel parcel)
+        public List<string> Post([FromBody] Parcel parcel, [FromQuery][Required] bool speedyShipping)
         {
-            var parcelCost = _parcelService.GetParcelCost(parcel);
+            var parcelCost = _parcelService.GetParcelCost(parcel, speedyShipping);
 
-            return $"{parcelCost.ParcelSize.GetDescription()}: ${parcelCost.PostageCost}. Total Cost: ${parcelCost.PostageCost}"; ;
+            return _parcelService.GetPostageInvoice(parcelCost, speedyShipping);
         }
     }
 }
