@@ -1,4 +1,6 @@
-﻿using FA_Courier_Kata.Domain.Models;
+﻿using System.Collections.Generic;
+using FA_Courier_Kata.Domain.Helpers;
+using FA_Courier_Kata.Domain.Models;
 using FA_Courier_Kata.Domain.Models.Enums;
 using FA_Courier_Kata.Domain.Services.Interfaces;
 
@@ -8,6 +10,21 @@ namespace FA_Courier_Kata.Domain.Services
     {
         public ParcelService()
         {
+        }
+
+        public List<string> GetPostageInvoice(ParcelCost parcelCost, bool speedyShipping)
+        {
+            var output = new List<string>
+            {
+                $"{parcelCost.ParcelSize.GetDescription()}: ${parcelCost.ItemCost}. Total Cost: ${parcelCost.TotalCost}"
+            };
+
+            if (speedyShipping)
+            {
+                output.Add($"Speedy Shipping: ${parcelCost.PostageCost}");
+            }
+
+            return output;
         }
 
         public ParcelCost GetParcelCost(Parcel parcel, bool speedyShipping)

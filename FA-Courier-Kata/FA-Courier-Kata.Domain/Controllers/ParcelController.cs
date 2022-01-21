@@ -1,3 +1,4 @@
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using FA_Courier_Kata.Domain.Helpers;
 using FA_Courier_Kata.Domain.Models;
@@ -22,7 +23,7 @@ namespace FA_Courier_Kata.Domain.Controllers
         {
             var parcelCost = _parcelService.GetParcelCost(parcel, speedyShipping);
 
-            return $"{parcelCost.ParcelSize.GetDescription()}: ${parcelCost.PostageCost}. Total Cost: ${parcelCost.PostageCost}"; ;
+            return _parcelService.GetPostageInvoice(parcelCost, speedyShipping);
         }
     }
 }
