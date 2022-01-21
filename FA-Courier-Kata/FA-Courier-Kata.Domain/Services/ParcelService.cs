@@ -10,15 +10,17 @@ namespace FA_Courier_Kata.Domain.Services
         {
         }
 
-        public ParcelCost GetParcelCost(Parcel parcel)
+        public ParcelCost GetParcelCost(Parcel parcel, bool speedyShipping)
         {
             var parcelSize = GetParcelSize(parcel);
+            var parcelCost = CalculateParcelPostage(parcelSize);
 
             return new ParcelCost
             {
                 ParcelDetails = parcel,
                 ParcelSize = parcelSize,
-                PostageCost = CalculateParcelPostage(parcelSize)
+                ItemCost = parcelCost,
+                PostageCost = speedyShipping ? parcelCost : 0
             };
         }
 
