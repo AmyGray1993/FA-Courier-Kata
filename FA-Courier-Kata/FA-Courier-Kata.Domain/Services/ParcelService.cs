@@ -8,6 +8,8 @@ namespace FA_Courier_Kata.Domain.Services
 {
     public class ParcelService : IParcelService
     {
+        private readonly int excessWeightChargePerKg = 2;
+
         public ParcelService()
         {
         }
@@ -16,13 +18,15 @@ namespace FA_Courier_Kata.Domain.Services
         {
             var output = new List<string>
             {
-                $"{parcelCost.ParcelSize.GetDescription()}: ${parcelCost.ItemCost}. Total Cost: ${parcelCost.TotalCost}"
+                $"{parcelCost.ParcelSize.GetDescription()}: ${parcelCost.ItemCost}."
             };
 
             if (speedyShipping)
             {
-                output.Add($"Speedy Shipping: ${parcelCost.PostageCost}");
+                output.Add($"Speedy Shipping: ${parcelCost.TotalCost / parcelCost.SpeedyShippingMultiplier}.");
             }
+
+            output.Add($"Total Cost: ${parcelCost.TotalCost}.");
 
             return output;
         }
@@ -30,26 +34,14 @@ namespace FA_Courier_Kata.Domain.Services
         public ParcelCost GetParcelCost(Parcel parcel, bool speedyShipping)
         {
             var parcelSize = GetParcelSize(parcel);
-            var parcelCost = CalculateParcelPostage(parcelSize);
 
             return new ParcelCost
             {
                 ParcelDetails = parcel,
                 ParcelSize = parcelSize,
-                ItemCost = parcelCost,
-                PostageCost = speedyShipping ? parcelCost : 0
-            };
-        }
-
-        private decimal CalculateParcelPostage(ParcelSize parcelSize)
-        {
-            return parcelSize switch
-            {
-                ParcelSize.Small => 3,
-                ParcelSize.Medium => 8,
-                ParcelSize.Large => 15,
-                ParcelSize.ExtraLarge => 25,
-                _ => 0,
+                ItemCost = CalculateParcelSizeCost(parcelSize),
+                ExcessWeightCost = CalculateExcessWeightCost(parcelSize, parcel.WeightKg),
+                SpeedyShipping = speedyShipping
             };
         }
 
@@ -77,5 +69,32 @@ namespace FA_Courier_Kata.Domain.Services
             }
         }
 
+        private decimal CalculateParcelSizeCost(ParcelSize parcelSize)
+        {
+            return parcelSize switch
+            {
+                ParcelSize.Small => 3,
+                ParcelSize.Medium => 8,
+                ParcelSize.Large => 15,
+                ParcelSize.ExtraLarge => 25,
+                _ => 0,
+            };
+        }
+
+        private decimal CalculateExcessWeightCost(ParcelSize parcelSize, decimal parcelWeight)
+        {
+            var weightLimit = parcelSize switch
+            {
+                ParcelSize.Small => 1,
+                ParcelSize.Medium => 3,
+                ParcelSize.Large => 6,
+                ParcelSize.ExtraLarge => 10,
+                _ => 0,
+            };
+
+            return parcelWeight > weightLimit
+                ? (parcelWeight - weightLimit) * excessWeightChargePerKg
+                : 0;
+        }
     }
 }
