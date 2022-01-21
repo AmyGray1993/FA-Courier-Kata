@@ -9,14 +9,18 @@ namespace FA_Courier_Kata.Domain.Models
 
         }
 
+        public readonly int SpeedyShippingMultiplier = 2;
+
         public Parcel ParcelDetails;
 
         public ParcelSize ParcelSize;
 
+        public bool SpeedyShipping;
+
         public decimal ItemCost;
 
-        public decimal PostageCost;
+        public decimal ExcessWeightCost;
 
-        public decimal TotalCost => ItemCost + PostageCost;
+        public decimal TotalCost => SpeedyShipping ? (ItemCost + ExcessWeightCost) * SpeedyShippingMultiplier : (ItemCost + ExcessWeightCost);
     }
 }

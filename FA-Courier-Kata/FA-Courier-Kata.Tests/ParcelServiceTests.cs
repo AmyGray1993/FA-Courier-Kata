@@ -9,17 +9,17 @@ namespace FA_Courier_Kata.Tests
     public class ParcelServiceTests
     {
         [Fact]
-        public void GetParcelCost_SmallParcelWithSpeedyShipping_TotalCostIs6()
+        public void GetParcelCost_ParcelWithSpeedyShipping_TotalCostIsDoubled()
         {
             // Arrange
             var sut = new ParcelService();
             var parcel = new Parcel
             {
-                Width = 9,
-                Height = 9,
-                Depth = 9
+                Width = 9.9M,
+                Height = 9.9M,
+                Depth = 9.9M,
+                WeightKg = 3
             };
-
 
             // Act
             var result = sut.GetParcelCost(parcel, true);
@@ -27,7 +27,129 @@ namespace FA_Courier_Kata.Tests
             // Assert
             result.ParcelSize.Should().Be(ParcelSize.Small);
             result.ItemCost.Should().Be(3);
-            result.PostageCost.Should().Be(3);
+            result.ExcessWeightCost.Should().Be(4);
+            result.SpeedyShipping.Should().BeTrue();
+            // (itemCost + excessWeightcost) * 2
+            // (3 + 4) * 2
+            result.TotalCost.Should().Be(14);
+        }
+
+        [Fact]
+        public void GetParcelCost_SmallParcelExceedsLimitBy2kg_TotalCostIs7()
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcel = new Parcel
+            {
+                Width = 9.9M,
+                Height = 9.9M,
+                Depth = 9.9M,
+                WeightKg = 3
+            };
+
+            // Act
+            var result = sut.GetParcelCost(parcel, false);
+
+            // Assert
+            result.ParcelSize.Should().Be(ParcelSize.Small);
+            result.ItemCost.Should().Be(3);
+            result.ExcessWeightCost.Should().Be(4);
+            result.SpeedyShipping.Should().BeFalse();
+            result.TotalCost.Should().Be(7);
+        }
+
+        [Fact]
+        public void GetParcelCost_MediumParcelExceedsLimitBy2kg__TotalCostIs12()
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcel = new Parcel
+            {
+                Width = 10,
+                Height = 35.9M,
+                Depth = 49.9M,
+                WeightKg = 5
+            };
+
+            // Act
+            var result = sut.GetParcelCost(parcel, false);
+
+            // Assert
+            result.ParcelSize.Should().Be(ParcelSize.Medium);
+            result.ItemCost.Should().Be(8);
+            result.ExcessWeightCost.Should().Be(4);
+            result.SpeedyShipping.Should().BeFalse();
+            result.TotalCost.Should().Be(12);
+        }
+
+        [Fact]
+        public void GetParcelCost_LargeParcelWithSpeedyShipping_TotalCostIs19()
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcel = new Parcel
+            {
+                Width = 50,
+                Height = 75.9M,
+                Depth = 99.9M,
+                WeightKg = 8
+            };
+
+            // Act
+            var result = sut.GetParcelCost(parcel, false);
+
+            // Assert
+            result.ParcelSize.Should().Be(ParcelSize.Large);
+            result.ItemCost.Should().Be(15);
+            result.ExcessWeightCost.Should().Be(4);
+            result.SpeedyShipping.Should().BeFalse();
+            result.TotalCost.Should().Be(19);
+        }
+
+        [Fact]
+        public void GetParcelCost_ExtraLargeParcelExceedsLimitBy2kg_TotalCostIs29()
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcel = new Parcel
+            {
+                Width = 100,
+                Height = 50.9M,
+                Depth = 50.9M,
+                WeightKg = 12
+            };
+
+            // Act
+            var result = sut.GetParcelCost(parcel, false);
+
+            // Assert
+            result.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
+            result.ItemCost.Should().Be(25);
+            result.ExcessWeightCost.Should().Be(4);
+            result.SpeedyShipping.Should().BeFalse();
+            result.TotalCost.Should().Be(29);
+        }
+
+        [Fact]
+        public void GetParcelCost_SmallParcelWithSpeedyShipping_TotalCostIs6()
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcel = new Parcel
+            {
+                Width = 9.9M,
+                Height = 9.9M,
+                Depth = 9.9M
+            };
+
+            // Act
+            var result = sut.GetParcelCost(parcel, true);
+
+            // Assert
+            result.ParcelSize.Should().Be(ParcelSize.Small);
+            result.ItemCost.Should().Be(3);
+            result.ExcessWeightCost.Should().Be(0);
+            result.SpeedyShipping.Should().BeTrue();
             result.TotalCost.Should().Be(6);
         }
 
@@ -39,10 +161,9 @@ namespace FA_Courier_Kata.Tests
             var parcel = new Parcel
             {
                 Width = 10,
-                Height = 35,
-                Depth = 49
+                Height = 35.9M,
+                Depth = 49.9M
             };
-
 
             // Act
             var result = sut.GetParcelCost(parcel, true);
@@ -50,7 +171,8 @@ namespace FA_Courier_Kata.Tests
             // Assert
             result.ParcelSize.Should().Be(ParcelSize.Medium);
             result.ItemCost.Should().Be(8);
-            result.PostageCost.Should().Be(8);
+            result.ExcessWeightCost.Should().Be(0);
+            result.SpeedyShipping.Should().BeTrue();
             result.TotalCost.Should().Be(16);
         }
 
@@ -62,10 +184,9 @@ namespace FA_Courier_Kata.Tests
             var parcel = new Parcel
             {
                 Width = 50,
-                Height = 75,
-                Depth = 99
+                Height = 75.9M,
+                Depth = 99.9M,
             };
-
 
             // Act
             var result = sut.GetParcelCost(parcel, true);
@@ -73,7 +194,8 @@ namespace FA_Courier_Kata.Tests
             // Assert
             result.ParcelSize.Should().Be(ParcelSize.Large);
             result.ItemCost.Should().Be(15);
-            result.PostageCost.Should().Be(15);
+            result.ExcessWeightCost.Should().Be(0);
+            result.SpeedyShipping.Should().BeTrue();
             result.TotalCost.Should().Be(30);
         }
 
@@ -85,10 +207,9 @@ namespace FA_Courier_Kata.Tests
             var parcel = new Parcel
             {
                 Width = 100,
-                Height = 50,
-                Depth = 50
+                Height = 50.9M,
+                Depth = 50.9M
             };
-
 
             // Act
             var result = sut.GetParcelCost(parcel, true);
@@ -96,7 +217,8 @@ namespace FA_Courier_Kata.Tests
             // Assert
             result.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
             result.ItemCost.Should().Be(25);
-            result.PostageCost.Should().Be(25);
+            result.ExcessWeightCost.Should().Be(0);
+            result.SpeedyShipping.Should().BeTrue();
             result.TotalCost.Should().Be(50);
         }
 
@@ -107,11 +229,10 @@ namespace FA_Courier_Kata.Tests
             var sut = new ParcelService();
             var parcel = new Parcel
             {
-                Width = 9,
-                Height = 9,
-                Depth = 9
+                Width = 9.9M,
+                Height = 9.9M,
+                Depth = 9.9M
             };
-
 
             // Act
             var result = sut.GetParcelCost(parcel, false);
@@ -119,7 +240,8 @@ namespace FA_Courier_Kata.Tests
             // Assert
             result.ParcelSize.Should().Be(ParcelSize.Small);
             result.ItemCost.Should().Be(3);
-            result.PostageCost.Should().Be(0);
+            result.ExcessWeightCost.Should().Be(0);
+            result.SpeedyShipping.Should().BeFalse();
             result.TotalCost.Should().Be(3);
         }
 
@@ -131,8 +253,8 @@ namespace FA_Courier_Kata.Tests
             var parcel = new Parcel
             {
                 Width = 10,
-                Height = 35,
-                Depth = 49
+                Height = 35.9M,
+                Depth = 49.9M
             };
 
             // Act
@@ -141,7 +263,8 @@ namespace FA_Courier_Kata.Tests
             // Assert
             result.ParcelSize.Should().Be(ParcelSize.Medium);
             result.ItemCost.Should().Be(8);
-            result.PostageCost.Should().Be(0);
+            result.ExcessWeightCost.Should().Be(0);
+            result.SpeedyShipping.Should().BeFalse();
             result.TotalCost.Should().Be(8);
         }
 
@@ -153,8 +276,8 @@ namespace FA_Courier_Kata.Tests
             var parcel = new Parcel
             {
                 Width = 10,
-                Height = 9,
-                Depth = 9
+                Height = 9.9M,
+                Depth = 9.9M
             };
 
             // Act
@@ -163,7 +286,8 @@ namespace FA_Courier_Kata.Tests
             // Assert
             result.ParcelSize.Should().Be(ParcelSize.Medium);
             result.ItemCost.Should().Be(8);
-            result.PostageCost.Should().Be(0);
+            result.ExcessWeightCost.Should().Be(0);
+            result.SpeedyShipping.Should().BeFalse();
             result.TotalCost.Should().Be(8);
         }
 
@@ -175,8 +299,8 @@ namespace FA_Courier_Kata.Tests
             var parcel = new Parcel
             {
                 Width = 50,
-                Height = 75,
-                Depth = 99
+                Height = 75.9M,
+                Depth = 99.9M
             };
 
             // Act
@@ -185,7 +309,8 @@ namespace FA_Courier_Kata.Tests
             // Assert
             result.ParcelSize.Should().Be(ParcelSize.Large);
             result.ItemCost.Should().Be(15);
-            result.PostageCost.Should().Be(0);
+            result.ExcessWeightCost.Should().Be(0);
+            result.SpeedyShipping.Should().BeFalse();
             result.TotalCost.Should().Be(15);
         }
 
@@ -197,8 +322,8 @@ namespace FA_Courier_Kata.Tests
             var parcel = new Parcel
             {
                 Width = 50,
-                Height = 49,
-                Depth = 49
+                Height = 49.9M,
+                Depth = 49.9M
             };
 
             // Act
@@ -207,7 +332,8 @@ namespace FA_Courier_Kata.Tests
             // Assert
             result.ParcelSize.Should().Be(ParcelSize.Large);
             result.ItemCost.Should().Be(15);
-            result.PostageCost.Should().Be(0);
+            result.ExcessWeightCost.Should().Be(0);
+            result.SpeedyShipping.Should().BeFalse();
             result.TotalCost.Should().Be(15);
         }
 
@@ -219,8 +345,8 @@ namespace FA_Courier_Kata.Tests
             var parcel = new Parcel
             {
                 Width = 101,
-                Height = 50,
-                Depth = 50
+                Height = 50.9M,
+                Depth = 50.9M
             };
 
             // Act
@@ -229,7 +355,8 @@ namespace FA_Courier_Kata.Tests
             // Assert
             result.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
             result.ItemCost.Should().Be(25);
-            result.PostageCost.Should().Be(0);
+            result.ExcessWeightCost.Should().Be(0);
+            result.SpeedyShipping.Should().BeFalse();
             result.TotalCost.Should().Be(25);
         }
 
@@ -241,8 +368,8 @@ namespace FA_Courier_Kata.Tests
             var parcel = new Parcel
             {
                 Width = 100,
-                Height = 50,
-                Depth = 50
+                Height = 50.9M,
+                Depth = 50.9M
             };
 
             // Act
@@ -251,7 +378,8 @@ namespace FA_Courier_Kata.Tests
             // Assert
             result.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
             result.ItemCost.Should().Be(25);
-            result.PostageCost.Should().Be(0);
+            result.ExcessWeightCost.Should().Be(0);
+            result.SpeedyShipping.Should().BeFalse();
             result.TotalCost.Should().Be(25);
         }
 
@@ -263,8 +391,8 @@ namespace FA_Courier_Kata.Tests
             var parcel = new Parcel
             {
                 Width = 100,
-                Height = 125,
-                Depth = 199
+                Height = 125.9M,
+                Depth = 199.9M
             };
 
             // Act
@@ -273,7 +401,8 @@ namespace FA_Courier_Kata.Tests
             // Assert
             result.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
             result.ItemCost.Should().Be(25);
-            result.PostageCost.Should().Be(0);
+            result.ExcessWeightCost.Should().Be(0);
+            result.SpeedyShipping.Should().BeFalse();
             result.TotalCost.Should().Be(25);
         }
     }

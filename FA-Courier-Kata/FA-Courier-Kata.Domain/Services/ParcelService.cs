@@ -16,13 +16,15 @@ namespace FA_Courier_Kata.Domain.Services
         {
             var output = new List<string>
             {
-                $"{parcelCost.ParcelSize.GetDescription()}: ${parcelCost.ItemCost}. Total Cost: ${parcelCost.TotalCost}"
+                $"{parcelCost.ParcelSize.GetDescription()}: ${parcelCost.ItemCost}."
             };
 
             if (speedyShipping)
             {
-                output.Add($"Speedy Shipping: ${parcelCost.PostageCost}");
+                output.Add($"Speedy Shipping: ${parcelCost.TotalCost / parcelCost.SpeedyShippingMultiplier}.");
             }
+
+            output.Add($"Total Cost: ${parcelCost.TotalCost}.");
 
             return output;
         }
@@ -30,14 +32,13 @@ namespace FA_Courier_Kata.Domain.Services
         public ParcelCost GetParcelCost(Parcel parcel, bool speedyShipping)
         {
             var parcelSize = GetParcelSize(parcel);
-            var parcelCost = CalculateParcelPostage(parcelSize);
 
             return new ParcelCost
             {
                 ParcelDetails = parcel,
                 ParcelSize = parcelSize,
-                ItemCost = parcelCost,
-                PostageCost = speedyShipping ? parcelCost : 0
+                ItemCost = CalculateParcelPostage(parcelSize),
+                SpeedyShipping = speedyShipping
             };
         }
 
