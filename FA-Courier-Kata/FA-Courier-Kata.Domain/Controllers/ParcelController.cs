@@ -17,12 +17,11 @@ namespace FA_Courier_Kata.Domain.Controllers
         }
 
         [HttpPost]
-        public ParcelCost Post([FromBody] Parcel parcel)
+        public string Post([FromBody] Parcel parcel)
         {
             var parcelCost = _parcelService.GetParcelCost(parcel);
-            var details = $"{parcelCost.ParcelSize.GetDescription()}: ${parcelCost.PostageCost}. Total Cost: ${parcelCost.PostageCost}";
 
-            return parcelCost;
+            return $"{parcelCost.ParcelSize.GetDescription()}: ${parcelCost.PostageCost}. Total Cost: ${parcelCost.PostageCost}"; ;
         }
     }
 }
