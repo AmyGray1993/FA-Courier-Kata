@@ -223,6 +223,154 @@ namespace FA_Courier_Kata.Tests
         }
 
         [Fact]
+        public void GetParcelCost_HeavyParcelWithSpeedyShipping_TotalCostIs50()
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcel = new Parcel
+            {
+                Width = 100,
+                Height = 50.9M,
+                Depth = 50.9M,
+                WeightKg = 25
+            };
+
+            // Act
+            var result = sut.GetParcelCost(parcel, true);
+
+            // Assert
+            /*
+                Based on dimensions alone, the parcel matches the criteria of an XL parcel.
+                However, it would be cheaper for the customer as a heavy parcel
+
+                var parcel = new Parcel
+                {
+                    Width = 100,
+                    Height = 50.9M,
+                    Depth = 50.9M,
+                    WeightKg = 25
+                };
+
+                XL = $25
+                Weight limit = 10kg
+                Excess = 15kg
+                Excess cost = 15 * 2 = $30
+                Total = £55 * 2 (Speedy Shipping Applied) = £110
+
+                Heavy = $50
+                Weight limit = 50kg
+                Excess = 0
+                Excess cost = 0 = $0
+                Total = £50 * 2 (Speedy Shipping Applied) = £100
+            */
+
+            result.ParcelSize.Should().Be(ParcelSize.Heavy);
+            result.ItemCost.Should().Be(50);
+            result.ExcessWeightCost.Should().Be(0);
+            result.SpeedyShipping.Should().BeTrue();
+            result.TotalCost.Should().Be(100);
+        }
+
+
+        [Fact]
+        public void GetParcelCost_HeavyParcelNoExcess_TotalCostIs50()
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcel = new Parcel
+            {
+                Width = 100,
+                Height = 50.9M,
+                Depth = 50.9M,
+                WeightKg = 25
+            };
+
+            // Act
+            var result = sut.GetParcelCost(parcel, false);
+
+            // Assert
+            /*
+                Based on dimensions alone, the parcel matches the criteria of an XL parcel.
+                However, it would be cheaper for the customer as a heavy parcel
+
+                var parcel = new Parcel
+                {
+                    Width = 100,
+                    Height = 50.9M,
+                    Depth = 50.9M,
+                    WeightKg = 25
+                };
+
+                XL = $25
+                Weight limit = 10kg
+                Excess = 15kg
+                Excess cost = 15 * 2 = $30
+                Total = £55
+
+                Heavy = $50
+                Weight limit = 50kg
+                Excess = 0
+                Excess cost = 0 = $0
+                Total = £50
+            */
+
+            result.ParcelSize.Should().Be(ParcelSize.Heavy);
+            result.ItemCost.Should().Be(50);
+            result.ExcessWeightCost.Should().Be(0);
+            result.SpeedyShipping.Should().BeFalse();
+            result.TotalCost.Should().Be(50);
+        }
+
+        [Fact]
+        public void GetParcelCost_HeavyParcelExceedsLimitBy10kg_TotalCostIs60()
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcel = new Parcel
+            {
+                Width = 100,
+                Height = 50.9M,
+                Depth = 50.9M,
+                WeightKg = 60
+            };
+
+            // Act
+            var result = sut.GetParcelCost(parcel, false);
+
+            // Assert
+            /*
+                Based on dimensions alone, the parcel matches the criteria of an XL parcel.
+                However, it would be cheaper for the customer as a heavy parcel
+
+                var parcel = new Parcel
+                {
+                    Width = 100,
+                    Height = 50.9M,
+                    Depth = 50.9M,
+                    WeightKg = 60
+                };
+
+                XL = $25
+                Weight limit = 10kg
+                Excess = 50kg
+                Excess cost = 50 * 2 = $100
+                Total = £125
+
+                Heavy = $50
+                Weight limit = 50kg
+                Excess = 10kg
+                Excess cost = 10 * 1 = $10
+                Total = £60
+            */
+
+            result.ParcelSize.Should().Be(ParcelSize.Heavy);
+            result.ItemCost.Should().Be(50);
+            result.ExcessWeightCost.Should().Be(10);
+            result.SpeedyShipping.Should().BeFalse();
+            result.TotalCost.Should().Be(60);
+        }
+
+        [Fact]
         public void GetParcelCost_AllDimensionsAreLessThan10_IsSmallParcel()
         {
             // Arrange
@@ -231,7 +379,8 @@ namespace FA_Courier_Kata.Tests
             {
                 Width = 9.9M,
                 Height = 9.9M,
-                Depth = 9.9M
+                Depth = 9.9M,
+                WeightKg = 1
             };
 
             // Act
@@ -254,7 +403,8 @@ namespace FA_Courier_Kata.Tests
             {
                 Width = 10,
                 Height = 35.9M,
-                Depth = 49.9M
+                Depth = 49.9M,
+                WeightKg = 3
             };
 
             // Act
@@ -277,7 +427,8 @@ namespace FA_Courier_Kata.Tests
             {
                 Width = 10,
                 Height = 9.9M,
-                Depth = 9.9M
+                Depth = 9.9M,
+                WeightKg = 3
             };
 
             // Act
@@ -300,7 +451,8 @@ namespace FA_Courier_Kata.Tests
             {
                 Width = 50,
                 Height = 75.9M,
-                Depth = 99.9M
+                Depth = 99.9M,
+                WeightKg = 6
             };
 
             // Act
@@ -323,7 +475,8 @@ namespace FA_Courier_Kata.Tests
             {
                 Width = 50,
                 Height = 49.9M,
-                Depth = 49.9M
+                Depth = 49.9M,
+                WeightKg = 6
             };
 
             // Act
@@ -346,7 +499,8 @@ namespace FA_Courier_Kata.Tests
             {
                 Width = 101,
                 Height = 50.9M,
-                Depth = 50.9M
+                Depth = 50.9M,
+                WeightKg = 10
             };
 
             // Act
@@ -369,7 +523,8 @@ namespace FA_Courier_Kata.Tests
             {
                 Width = 100,
                 Height = 50.9M,
-                Depth = 50.9M
+                Depth = 50.9M,
+                WeightKg = 10
             };
 
             // Act
@@ -392,7 +547,8 @@ namespace FA_Courier_Kata.Tests
             {
                 Width = 100,
                 Height = 125.9M,
-                Depth = 199.9M
+                Depth = 199.9M,
+                WeightKg = 10
             };
 
             // Act
