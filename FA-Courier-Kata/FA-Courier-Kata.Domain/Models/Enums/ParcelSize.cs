@@ -14,6 +14,9 @@ namespace FA_Courier_Kata.Domain.Models.Enums
         Large,
 
         [Description("Extra Large Parcel")]
-        ExtraLarge
+        ExtraLarge,
+
+        [Description("Heavy Parcel")]
+        Heavy
     }
 }
