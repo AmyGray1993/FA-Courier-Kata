@@ -8,7 +8,9 @@ namespace FA_Courier_Kata.Domain.Services
 {
     public class ParcelService : IParcelService
     {
-        private readonly int excessWeightChargePerKg = 2;
+        private readonly int standardExcessWeightChargePerKg = 2;
+        private readonly int heavyExcessWeightChargePerKg = 1;
+        private readonly int heavyParcelBaseRate = 50;
 
         public ParcelService()
         {
@@ -35,7 +37,7 @@ namespace FA_Courier_Kata.Domain.Services
         {
             var parcelSize = GetParcelSize(parcel);
 
-            return new ParcelCost
+            var basicParcelCost = new ParcelCost
             {
                 ParcelDetails = parcel,
                 ParcelSize = parcelSize,
@@ -43,6 +45,17 @@ namespace FA_Courier_Kata.Domain.Services
                 ExcessWeightCost = CalculateExcessWeightCost(parcelSize, parcel.WeightKg),
                 SpeedyShipping = speedyShipping
             };
+
+            if (basicParcelCost.TotalCost > heavyParcelBaseRate)
+            {
+                var heavyParcelCost = CalculateHeavyParcelRate(parcel, speedyShipping);
+
+                return heavyParcelCost.TotalCost < basicParcelCost.TotalCost
+                    ? heavyParcelCost
+                    : basicParcelCost;
+            }
+
+            return basicParcelCost;
         }
 
         private ParcelSize GetParcelSize(Parcel parcel)
@@ -77,24 +90,42 @@ namespace FA_Courier_Kata.Domain.Services
                 ParcelSize.Medium => 8,
                 ParcelSize.Large => 15,
                 ParcelSize.ExtraLarge => 25,
+                ParcelSize.Heavy => heavyParcelBaseRate,
                 _ => 0,
             };
         }
 
         private decimal CalculateExcessWeightCost(ParcelSize parcelSize, decimal parcelWeight)
         {
+            var excessWeightCharge = parcelSize == ParcelSize.Heavy
+                ? heavyExcessWeightChargePerKg
+                : standardExcessWeightChargePerKg;
+
             var weightLimit = parcelSize switch
             {
                 ParcelSize.Small => 1,
                 ParcelSize.Medium => 3,
                 ParcelSize.Large => 6,
                 ParcelSize.ExtraLarge => 10,
+                ParcelSize.Heavy => heavyParcelBaseRate,
                 _ => 0,
             };
 
             return parcelWeight > weightLimit
-                ? (parcelWeight - weightLimit) * excessWeightChargePerKg
+                ? (parcelWeight - weightLimit) * excessWeightCharge
                 : 0;
+        }
+
+        private ParcelCost CalculateHeavyParcelRate(Parcel parcel, bool speedyShipping)
+        {
+            return new ParcelCost
+            {
+                ParcelDetails = parcel,
+                ParcelSize = ParcelSize.Heavy,
+                ItemCost = CalculateParcelSizeCost(ParcelSize.Heavy),
+                ExcessWeightCost = CalculateExcessWeightCost(ParcelSize.Heavy, parcel.WeightKg),
+                SpeedyShipping = speedyShipping
+            };
         }
     }
 }

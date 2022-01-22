@@ -271,7 +271,6 @@ namespace FA_Courier_Kata.Tests
             result.TotalCost.Should().Be(100);
         }
 
-
         [Fact]
         public void GetParcelCost_HeavyParcelNoExcess_TotalCostIs50()
         {
@@ -370,6 +369,54 @@ namespace FA_Courier_Kata.Tests
             result.TotalCost.Should().Be(60);
         }
 
+        [Theory]
+        [InlineData(15, ParcelSize.ExtraLarge, 35)]
+        [InlineData(25, ParcelSize.Heavy, 50)]
+        public void GetParcelCost_ParcelExceedsLimit_ReturnsCheapestOption(decimal parcelWeight, ParcelSize expectedParcelSize, decimal expectedTotal)
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcel = new Parcel
+            {
+                Width = 100,
+                Height = 50.9M,
+                Depth = 50.9M,
+                WeightKg = parcelWeight
+            };
+
+            // Act
+            var result = sut.GetParcelCost(parcel, false);
+
+            // Assert
+            /*
+                Based on dimensions alone, the parcel matches the criteria of an XL parcel.
+                However, it would be cheaper for the customer as a heavy parcel
+
+                var parcel = new Parcel
+                {
+                    Width = 100,
+                    Height = 50.9M,
+                    Depth = 50.9M,
+                    WeightKg = 15
+                };
+
+                XL = $25
+                Weight limit = 10kg
+                Excess = 15 - 10 = 5kg
+                Excess cost = 5 * 2 = $10
+                Total = $35
+
+                Heavy = $50
+                Weight limit = 50kg
+                Excess = 0kg
+                Excess cost = 0
+                Total = $50
+            */
+
+            result.ParcelSize.Should().Be(expectedParcelSize);
+            result.SpeedyShipping.Should().BeFalse();
+            result.TotalCost.Should().Be(expectedTotal);
+        }
         [Fact]
         public void GetParcelCost_AllDimensionsAreLessThan10_IsSmallParcel()
         {
