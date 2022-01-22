@@ -8,6 +8,7 @@ namespace FA_Courier_Kata.Domain.Services
 {
     public class ParcelService : IParcelService
     {
+        private readonly int speedyShippingMultiplier = 2;
         private readonly int standardExcessWeightChargePerKg = 2;
         private readonly int heavyExcessWeightChargePerKg = 1;
         private readonly int heavyParcelBaseRate = 50;
@@ -25,10 +26,10 @@ namespace FA_Courier_Kata.Domain.Services
 
             if (speedyShipping)
             {
-                output.Add($"Speedy Shipping: ${parcelCost.TotalCost / parcelCost.SpeedyShippingMultiplier}.");
+                output.Add($"Speedy Shipping: ${parcelCost.SubTotal / speedyShippingMultiplier}.");
             }
 
-            output.Add($"Total Cost: ${parcelCost.TotalCost}.");
+            output.Add($"Total Cost: ${parcelCost.SubTotal}.");
 
             return output;
         }
@@ -43,14 +44,13 @@ namespace FA_Courier_Kata.Domain.Services
                 ParcelSize = parcelSize,
                 ItemCost = CalculateParcelSizeCost(parcelSize),
                 ExcessWeightCost = CalculateExcessWeightCost(parcelSize, parcel.WeightKg),
-                SpeedyShipping = speedyShipping
             };
 
-            if (basicParcelCost.TotalCost > heavyParcelBaseRate)
+            if (basicParcelCost.SubTotal > heavyParcelBaseRate)
             {
-                var heavyParcelCost = CalculateHeavyParcelRate(parcel, speedyShipping);
+                var heavyParcelCost = CalculateHeavyParcelRate(parcel);
 
-                return heavyParcelCost.TotalCost < basicParcelCost.TotalCost
+                return heavyParcelCost.SubTotal < basicParcelCost.SubTotal
                     ? heavyParcelCost
                     : basicParcelCost;
             }
@@ -116,7 +116,7 @@ namespace FA_Courier_Kata.Domain.Services
                 : 0;
         }
 
-        private ParcelCost CalculateHeavyParcelRate(Parcel parcel, bool speedyShipping)
+        private ParcelCost CalculateHeavyParcelRate(Parcel parcel)
         {
             return new ParcelCost
             {
@@ -124,7 +124,6 @@ namespace FA_Courier_Kata.Domain.Services
                 ParcelSize = ParcelSize.Heavy,
                 ItemCost = CalculateParcelSizeCost(ParcelSize.Heavy),
                 ExcessWeightCost = CalculateExcessWeightCost(ParcelSize.Heavy, parcel.WeightKg),
-                SpeedyShipping = speedyShipping
             };
         }
     }
