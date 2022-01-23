@@ -17,6 +17,11 @@ namespace FA_Courier_Kata.Domain.Services
         {
         }
 
+        public ShippingRequest ProcessShippingRequest(List<Parcel> parcels, bool speedyShipping)
+        {
+            return new ShippingRequest();
+        }
+
         public List<string> GetPostageInvoice(ParcelCost parcelCost, bool speedyShipping)
         {
             var output = new List<string>
