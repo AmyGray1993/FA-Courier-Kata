@@ -19,27 +19,30 @@ namespace FA_Courier_Kata.Domain.Services
 
         public ShippingRequest ProcessShippingRequest(List<Parcel> parcels, bool speedyShipping)
         {
-            return new ShippingRequest();
-        }
+            var parcelCosts = new List<ParcelCost>();
+            var runningTotal = 0M;
 
-        public List<string> GetPostageInvoice(ParcelCost parcelCost, bool speedyShipping)
-        {
-            var output = new List<string>
+            foreach (var parcel in parcels)
             {
-                $"{parcelCost.ParcelSize.GetDescription()}: ${parcelCost.ItemCost}."
-            };
-
-            if (speedyShipping)
-            {
-                output.Add($"Speedy Shipping: ${parcelCost.SubTotal / speedyShippingMultiplier}.");
+                var parcelCost = GetParcelCost(parcel);
+                parcelCosts.Add(parcelCost);
+                runningTotal += parcelCost.SubTotal;
             }
 
-            output.Add($"Total Cost: ${parcelCost.SubTotal}.");
+            var shippingRequest = new ShippingRequest()
+            {
+                Parcels = parcelCosts,
+                SpeedyShipping = speedyShipping,
+                TotalCost = speedyShipping ? runningTotal * speedyShippingMultiplier : runningTotal
+            };
 
-            return output;
+            shippingRequest.PriceBreakdown = GetPriceBreakdown(shippingRequest);
+
+            return shippingRequest;
         }
 
-        public ParcelCost GetParcelCost(Parcel parcel, bool speedyShipping)
+        #region Private Methods
+        private ParcelCost GetParcelCost(Parcel parcel)
         {
             var parcelSize = GetParcelSize(parcel);
 
@@ -131,5 +134,25 @@ namespace FA_Courier_Kata.Domain.Services
                 ExcessWeightCost = CalculateExcessWeightCost(ParcelSize.Heavy, parcel.WeightKg),
             };
         }
+
+        private List<string> GetPriceBreakdown(ShippingRequest shippingRequest)
+        {
+            var priceBreakdown = new List<string>();
+
+            foreach (var parcel in shippingRequest.Parcels)
+            {
+                priceBreakdown.Add($"{parcel.ParcelSize.GetDescription()}: ${parcel.SubTotal}.");
+            }
+
+            if (shippingRequest.SpeedyShipping)
+            {
+                priceBreakdown.Add($"Speedy Shipping: ${shippingRequest.TotalCost / speedyShippingMultiplier}.");
+            }
+
+            priceBreakdown.Add($"Total Cost: ${shippingRequest.TotalCost}.");
+
+            return priceBreakdown;
+        }
+        #endregion
     }
 }

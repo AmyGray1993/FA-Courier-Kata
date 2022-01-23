@@ -5,8 +5,6 @@ namespace FA_Courier_Kata.Domain.Services.Interfaces
 {
     public interface IParcelService
     {
-        List<string> GetPostageInvoice(ParcelCost parcelCost, bool speedyShipping);
-
-        ParcelCost GetParcelCost(Parcel parcel, bool speedyShipping);
+        ShippingRequest ProcessShippingRequest(List<Parcel> parcels, bool speedyShipping);
     }
 }

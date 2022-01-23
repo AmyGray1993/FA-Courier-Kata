@@ -88,6 +88,81 @@ namespace FA_Courier_Kata.Tests
         }
 
         [Fact]
+        public void ProcessShippingRequest_MultipleParcelsNoSpeedyShipping_PriceBreakdownIsValid()
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcels = new List<Parcel> {
+                new Parcel
+                {
+                    Width = 9.9M,
+                    Height = 9.9M,
+                    Depth = 9.9M,
+                    WeightKg = 1
+                },
+                new Parcel
+                {
+                    Width = 10,
+                    Height = 35.9M,
+                    Depth = 49.9M,
+                    WeightKg = 5
+                },
+            };
+
+            // Act
+            var result = sut.ProcessShippingRequest(parcels, false);
+
+            // Assert
+            result.Parcels.Count.Should().Be(2);
+            result.SpeedyShipping.Should().BeFalse();
+            result.TotalCost.Should().Be(15);
+
+            var priceBreakdown = result.PriceBreakdown;
+            priceBreakdown.Count.Should().Be(3);
+            priceBreakdown.Should().Contain("Small Parcel: $3.");
+            priceBreakdown.Should().Contain("Medium Parcel: $12.");
+            priceBreakdown.Should().Contain("Total Cost: $15.");
+        }
+
+        [Fact]
+        public void ProcessShippingRequest_MultipleParcelsWithSpeedyShipping_PriceBreakdownIsValid()
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcels = new List<Parcel> {
+                new Parcel
+                {
+                    Width = 9.9M,
+                    Height = 9.9M,
+                    Depth = 9.9M,
+                    WeightKg = 1
+                },
+                new Parcel
+                {
+                    Width = 10,
+                    Height = 35.9M,
+                    Depth = 49.9M,
+                    WeightKg = 5
+                },
+            };
+
+            // Act
+            var result = sut.ProcessShippingRequest(parcels, true);
+
+            // Assert
+            result.Parcels.Count.Should().Be(2);
+            result.SpeedyShipping.Should().BeTrue();
+            result.TotalCost.Should().Be(30);
+
+            var priceBreakdown = result.PriceBreakdown;
+            priceBreakdown.Count.Should().Be(4);
+            priceBreakdown.Should().Contain("Small Parcel: $3.");
+            priceBreakdown.Should().Contain("Medium Parcel: $12.");
+            priceBreakdown.Should().Contain("Speedy Shipping: $15.");
+            priceBreakdown.Should().Contain("Total Cost: $30.");
+        }
+
+        [Fact]
         public void ProcessShippingRequest_MultipleParcelsNoExcessWeight_TotalCostIncludesAllSubTotals()
         {
             // Arrange

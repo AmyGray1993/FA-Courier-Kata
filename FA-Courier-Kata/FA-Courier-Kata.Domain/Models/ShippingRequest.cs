@@ -11,6 +11,8 @@ namespace FA_Courier_Kata.Domain.Models
 
         public List<ParcelCost> Parcels = new List<ParcelCost>();
 
+        public List<string> PriceBreakdown = new List<string>();
+
         public bool SpeedyShipping;
 
         public decimal TotalCost;
