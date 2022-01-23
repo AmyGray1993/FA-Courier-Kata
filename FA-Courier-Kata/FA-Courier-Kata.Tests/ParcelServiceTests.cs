@@ -1,4 +1,5 @@
-﻿using FA_Courier_Kata.Domain.Models;
+﻿using System.Collections.Generic;
+using FA_Courier_Kata.Domain.Models;
 using FA_Courier_Kata.Domain.Models.Enums;
 using FA_Courier_Kata.Domain.Services;
 using FluentAssertions;
@@ -8,384 +9,322 @@ namespace FA_Courier_Kata.Tests
 {
     public class ParcelServiceTests
     {
-        [Fact]
-        public void GetParcelCost_ParcelWithSpeedyShipping_TotalCostIsDoubled()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ProcessShippingRequest_SingleParcel_TotalCostIsValid(bool speedyShipping)
         {
             // Arrange
             var sut = new ParcelService();
-            var parcel = new Parcel
-            {
-                Width = 9.9M,
-                Height = 9.9M,
-                Depth = 9.9M,
-                WeightKg = 3
+            var parcels = new List<Parcel> {
+                new Parcel
+                {
+                    Width = 9.9M,
+                    Height = 9.9M,
+                    Depth = 9.9M,
+                    WeightKg = 3
+                }
             };
 
+            var expectedTotal = speedyShipping ? 14 : 7;
+
             // Act
-            var result = sut.GetParcelCost(parcel, true);
+            var result = sut.ProcessShippingRequest(parcels, speedyShipping);
 
             // Assert
-            result.ParcelSize.Should().Be(ParcelSize.Small);
-            result.ItemCost.Should().Be(3);
-            result.ExcessWeightCost.Should().Be(4);
-            result.SpeedyShipping.Should().BeTrue();
-            // (itemCost + excessWeightcost) * 2
-            // (3 + 4) * 2
-            result.TotalCost.Should().Be(14);
+            var parcelOutput = result.Parcels[0];
+
+            parcelOutput.ParcelSize.Should().Be(ParcelSize.Small);
+            parcelOutput.ItemCost.Should().Be(3);
+            parcelOutput.ExcessWeightCost.Should().Be(4);
+            parcelOutput.SubTotal.Should().Be(7);
+
+            result.SpeedyShipping.Should().Be(speedyShipping);
+            result.TotalCost.Should().Be(expectedTotal);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ProcessShippingRequest_MultipleParcels_TotalCostIsValid(bool speedyShipping)
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcels = new List<Parcel> {
+                new Parcel
+                {
+                    Width = 9.9M,
+                    Height = 9.9M,
+                    Depth = 9.9M,
+                    WeightKg = 1
+                },
+                new Parcel
+                {
+                    Width = 10,
+                    Height = 35.9M,
+                    Depth = 49.9M,
+                    WeightKg = 3
+                },
+            };
+
+            var expectedTotal = speedyShipping ? 22 : 11;
+
+            // Act
+            var result = sut.ProcessShippingRequest(parcels, speedyShipping);
+
+            // Assert
+            result.Parcels.Count.Should().Be(2);
+
+            var smallParcel = result.Parcels[0];
+            smallParcel.ParcelSize.Should().Be(ParcelSize.Small);
+            smallParcel.SubTotal.Should().Be(3);
+
+            var mediumParcel = result.Parcels[1];
+            mediumParcel.ParcelSize.Should().Be(ParcelSize.Medium);
+            mediumParcel.SubTotal.Should().Be(8);
+
+            result.SpeedyShipping.Should().Be(speedyShipping);
+            result.TotalCost.Should().Be(expectedTotal);
         }
 
         [Fact]
-        public void GetParcelCost_SmallParcelExceedsLimitBy2kg_TotalCostIs7()
+        public void ProcessShippingRequest_MultipleParcelsNoSpeedyShipping_PriceBreakdownIsValid()
         {
             // Arrange
             var sut = new ParcelService();
-            var parcel = new Parcel
-            {
-                Width = 9.9M,
-                Height = 9.9M,
-                Depth = 9.9M,
-                WeightKg = 3
+            var parcels = new List<Parcel> {
+                new Parcel
+                {
+                    Width = 9.9M,
+                    Height = 9.9M,
+                    Depth = 9.9M,
+                    WeightKg = 1
+                },
+                new Parcel
+                {
+                    Width = 10,
+                    Height = 35.9M,
+                    Depth = 49.9M,
+                    WeightKg = 5
+                },
             };
 
             // Act
-            var result = sut.GetParcelCost(parcel, false);
+            var result = sut.ProcessShippingRequest(parcels, false);
 
             // Assert
-            result.ParcelSize.Should().Be(ParcelSize.Small);
-            result.ItemCost.Should().Be(3);
-            result.ExcessWeightCost.Should().Be(4);
+            result.Parcels.Count.Should().Be(2);
             result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(7);
+            result.TotalCost.Should().Be(15);
+
+            var priceBreakdown = result.PriceBreakdown;
+            priceBreakdown.Count.Should().Be(3);
+            priceBreakdown.Should().Contain("Small Parcel: $3.");
+            priceBreakdown.Should().Contain("Medium Parcel: $12.");
+            priceBreakdown.Should().Contain("Total Cost: $15.");
         }
 
         [Fact]
-        public void GetParcelCost_MediumParcelExceedsLimitBy2kg__TotalCostIs12()
+        public void ProcessShippingRequest_MultipleParcelsWithSpeedyShipping_PriceBreakdownIsValid()
         {
             // Arrange
             var sut = new ParcelService();
-            var parcel = new Parcel
-            {
-                Width = 10,
-                Height = 35.9M,
-                Depth = 49.9M,
-                WeightKg = 5
+            var parcels = new List<Parcel> {
+                new Parcel
+                {
+                    Width = 9.9M,
+                    Height = 9.9M,
+                    Depth = 9.9M,
+                    WeightKg = 1
+                },
+                new Parcel
+                {
+                    Width = 10,
+                    Height = 35.9M,
+                    Depth = 49.9M,
+                    WeightKg = 5
+                },
             };
 
             // Act
-            var result = sut.GetParcelCost(parcel, false);
+            var result = sut.ProcessShippingRequest(parcels, true);
 
             // Assert
-            result.ParcelSize.Should().Be(ParcelSize.Medium);
-            result.ItemCost.Should().Be(8);
-            result.ExcessWeightCost.Should().Be(4);
-            result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(12);
-        }
-
-        [Fact]
-        public void GetParcelCost_LargeParcelWithSpeedyShipping_TotalCostIs19()
-        {
-            // Arrange
-            var sut = new ParcelService();
-            var parcel = new Parcel
-            {
-                Width = 50,
-                Height = 75.9M,
-                Depth = 99.9M,
-                WeightKg = 8
-            };
-
-            // Act
-            var result = sut.GetParcelCost(parcel, false);
-
-            // Assert
-            result.ParcelSize.Should().Be(ParcelSize.Large);
-            result.ItemCost.Should().Be(15);
-            result.ExcessWeightCost.Should().Be(4);
-            result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(19);
-        }
-
-        [Fact]
-        public void GetParcelCost_ExtraLargeParcelExceedsLimitBy2kg_TotalCostIs29()
-        {
-            // Arrange
-            var sut = new ParcelService();
-            var parcel = new Parcel
-            {
-                Width = 100,
-                Height = 50.9M,
-                Depth = 50.9M,
-                WeightKg = 12
-            };
-
-            // Act
-            var result = sut.GetParcelCost(parcel, false);
-
-            // Assert
-            result.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
-            result.ItemCost.Should().Be(25);
-            result.ExcessWeightCost.Should().Be(4);
-            result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(29);
-        }
-
-        [Fact]
-        public void GetParcelCost_SmallParcelWithSpeedyShipping_TotalCostIs6()
-        {
-            // Arrange
-            var sut = new ParcelService();
-            var parcel = new Parcel
-            {
-                Width = 9.9M,
-                Height = 9.9M,
-                Depth = 9.9M
-            };
-
-            // Act
-            var result = sut.GetParcelCost(parcel, true);
-
-            // Assert
-            result.ParcelSize.Should().Be(ParcelSize.Small);
-            result.ItemCost.Should().Be(3);
-            result.ExcessWeightCost.Should().Be(0);
-            result.SpeedyShipping.Should().BeTrue();
-            result.TotalCost.Should().Be(6);
-        }
-
-        [Fact]
-        public void GetParcelCost_MediumParcelWithSpeedyShipping_TotalCostIs16()
-        {
-            // Arrange
-            var sut = new ParcelService();
-            var parcel = new Parcel
-            {
-                Width = 10,
-                Height = 35.9M,
-                Depth = 49.9M
-            };
-
-            // Act
-            var result = sut.GetParcelCost(parcel, true);
-
-            // Assert
-            result.ParcelSize.Should().Be(ParcelSize.Medium);
-            result.ItemCost.Should().Be(8);
-            result.ExcessWeightCost.Should().Be(0);
-            result.SpeedyShipping.Should().BeTrue();
-            result.TotalCost.Should().Be(16);
-        }
-
-        [Fact]
-        public void GetParcelCost_LargeParcelWithSpeedyShipping_TotalCostIs30()
-        {
-            // Arrange
-            var sut = new ParcelService();
-            var parcel = new Parcel
-            {
-                Width = 50,
-                Height = 75.9M,
-                Depth = 99.9M,
-            };
-
-            // Act
-            var result = sut.GetParcelCost(parcel, true);
-
-            // Assert
-            result.ParcelSize.Should().Be(ParcelSize.Large);
-            result.ItemCost.Should().Be(15);
-            result.ExcessWeightCost.Should().Be(0);
+            result.Parcels.Count.Should().Be(2);
             result.SpeedyShipping.Should().BeTrue();
             result.TotalCost.Should().Be(30);
+
+            var priceBreakdown = result.PriceBreakdown;
+            priceBreakdown.Count.Should().Be(4);
+            priceBreakdown.Should().Contain("Small Parcel: $3.");
+            priceBreakdown.Should().Contain("Medium Parcel: $12.");
+            priceBreakdown.Should().Contain("Speedy Shipping: $15.");
+            priceBreakdown.Should().Contain("Total Cost: $30.");
         }
 
         [Fact]
-        public void GetParcelCost_ExtraLargeParcelWithSpeedyShipping_TotalCostIs50()
+        public void ProcessShippingRequest_MultipleParcelsNoExcessWeight_TotalCostIncludesAllSubTotals()
         {
             // Arrange
             var sut = new ParcelService();
-            var parcel = new Parcel
-            {
-                Width = 100,
-                Height = 50.9M,
-                Depth = 50.9M
-            };
-
-            // Act
-            var result = sut.GetParcelCost(parcel, true);
-
-            // Assert
-            result.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
-            result.ItemCost.Should().Be(25);
-            result.ExcessWeightCost.Should().Be(0);
-            result.SpeedyShipping.Should().BeTrue();
-            result.TotalCost.Should().Be(50);
-        }
-
-        [Fact]
-        public void GetParcelCost_HeavyParcelWithSpeedyShipping_TotalCostIs50()
-        {
-            // Arrange
-            var sut = new ParcelService();
-            var parcel = new Parcel
-            {
-                Width = 100,
-                Height = 50.9M,
-                Depth = 50.9M,
-                WeightKg = 25
-            };
-
-            // Act
-            var result = sut.GetParcelCost(parcel, true);
-
-            // Assert
-            /*
-                Based on dimensions alone, the parcel matches the criteria of an XL parcel.
-                However, it would be cheaper for the customer as a heavy parcel
-
-                var parcel = new Parcel
+            var parcels = new List<Parcel> {
+                new Parcel
+                {
+                    Width = 9.9M,
+                    Height = 9.9M,
+                    Depth = 9.9M,
+                    WeightKg = 1
+                },
+                new Parcel
+                {
+                    Width = 10,
+                    Height = 35.9M,
+                    Depth = 49.9M,
+                    WeightKg = 3
+                },
+                new Parcel
+                {
+                    Width = 50,
+                    Height = 75.9M,
+                    Depth = 99.9M,
+                    WeightKg = 6
+                },
+                new Parcel
+                {
+                    Width = 100,
+                    Height = 50.9M,
+                    Depth = 50.9M,
+                    WeightKg = 10
+                },
+                new Parcel
                 {
                     Width = 100,
                     Height = 50.9M,
                     Depth = 50.9M,
                     WeightKg = 25
-                };
-
-                XL = $25
-                Weight limit = 10kg
-                Excess = 15kg
-                Excess cost = 15 * 2 = $30
-                Total = £55 * 2 (Speedy Shipping Applied) = £110
-
-                Heavy = $50
-                Weight limit = 50kg
-                Excess = 0
-                Excess cost = 0 = $0
-                Total = £50 * 2 (Speedy Shipping Applied) = £100
-            */
-
-            result.ParcelSize.Should().Be(ParcelSize.Heavy);
-            result.ItemCost.Should().Be(50);
-            result.ExcessWeightCost.Should().Be(0);
-            result.SpeedyShipping.Should().BeTrue();
-            result.TotalCost.Should().Be(100);
-        }
-
-        [Fact]
-        public void GetParcelCost_HeavyParcelNoExcess_TotalCostIs50()
-        {
-            // Arrange
-            var sut = new ParcelService();
-            var parcel = new Parcel
-            {
-                Width = 100,
-                Height = 50.9M,
-                Depth = 50.9M,
-                WeightKg = 25
+                }
             };
 
             // Act
-            var result = sut.GetParcelCost(parcel, false);
+            var result = sut.ProcessShippingRequest(parcels, false);
 
             // Assert
-            /*
-                Based on dimensions alone, the parcel matches the criteria of an XL parcel.
-                However, it would be cheaper for the customer as a heavy parcel
+            result.Parcels.Count.Should().Be(5);
 
-                var parcel = new Parcel
+            var smallParcel = result.Parcels[0];
+            smallParcel.ParcelSize.Should().Be(ParcelSize.Small);
+            smallParcel.SubTotal.Should().Be(3);
+
+            var mediumParcel = result.Parcels[1];
+            mediumParcel.ParcelSize.Should().Be(ParcelSize.Medium);
+            mediumParcel.SubTotal.Should().Be(8);
+
+            var largeParcel = result.Parcels[2];
+            largeParcel.ParcelSize.Should().Be(ParcelSize.Large);
+            largeParcel.SubTotal.Should().Be(15);
+
+            var xlParcel = result.Parcels[3];
+            xlParcel.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
+            xlParcel.SubTotal.Should().Be(25);
+
+            var heavyParcel = result.Parcels[4];
+            heavyParcel.ParcelSize.Should().Be(ParcelSize.Heavy);
+            heavyParcel.SubTotal.Should().Be(50);
+
+            result.SpeedyShipping.Should().BeFalse();
+            result.TotalCost.Should().Be(101);
+        }
+
+        [Fact]
+        public void ProcessShippingRequest_MultipleParcelsEachExceedsLimitBy2kg_SubTotalsIncludeExcessWeightCost()
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcels = new List<Parcel> {
+                new Parcel
+                {
+                    Width = 9.9M,
+                    Height = 9.9M,
+                    Depth = 9.9M,
+                    WeightKg = 3
+                },
+                new Parcel
+                {
+                    Width = 10,
+                    Height = 35.9M,
+                    Depth = 49.9M,
+                    WeightKg = 5
+                },
+                new Parcel
+                {
+                    Width = 50,
+                    Height = 75.9M,
+                    Depth = 99.9M,
+                    WeightKg = 8
+                },
+                new Parcel
                 {
                     Width = 100,
                     Height = 50.9M,
                     Depth = 50.9M,
-                    WeightKg = 25
-                };
-
-                XL = $25
-                Weight limit = 10kg
-                Excess = 15kg
-                Excess cost = 15 * 2 = $30
-                Total = £55
-
-                Heavy = $50
-                Weight limit = 50kg
-                Excess = 0
-                Excess cost = 0 = $0
-                Total = £50
-            */
-
-            result.ParcelSize.Should().Be(ParcelSize.Heavy);
-            result.ItemCost.Should().Be(50);
-            result.ExcessWeightCost.Should().Be(0);
-            result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(50);
-        }
-
-        [Fact]
-        public void GetParcelCost_HeavyParcelExceedsLimitBy10kg_TotalCostIs60()
-        {
-            // Arrange
-            var sut = new ParcelService();
-            var parcel = new Parcel
-            {
-                Width = 100,
-                Height = 50.9M,
-                Depth = 50.9M,
-                WeightKg = 60
+                    WeightKg = 12
+                }
             };
 
             // Act
-            var result = sut.GetParcelCost(parcel, false);
+            var result = sut.ProcessShippingRequest(parcels, false);
 
             // Assert
-            /*
-                Based on dimensions alone, the parcel matches the criteria of an XL parcel.
-                However, it would be cheaper for the customer as a heavy parcel
+            result.Parcels.Count.Should().Be(4);
 
-                var parcel = new Parcel
-                {
-                    Width = 100,
-                    Height = 50.9M,
-                    Depth = 50.9M,
-                    WeightKg = 60
-                };
+            var smallParcel = result.Parcels[0];
+            smallParcel.ParcelSize.Should().Be(ParcelSize.Small);
+            smallParcel.ItemCost.Should().Be(3);
+            smallParcel.ExcessWeightCost.Should().Be(4);
+            smallParcel.SubTotal.Should().Be(7);
 
-                XL = $25
-                Weight limit = 10kg
-                Excess = 50kg
-                Excess cost = 50 * 2 = $100
-                Total = £125
+            var mediumParcel = result.Parcels[1];
+            mediumParcel.ParcelSize.Should().Be(ParcelSize.Medium);
+            mediumParcel.ItemCost.Should().Be(8);
+            mediumParcel.ExcessWeightCost.Should().Be(4);
+            mediumParcel.SubTotal.Should().Be(12);
 
-                Heavy = $50
-                Weight limit = 50kg
-                Excess = 10kg
-                Excess cost = 10 * 1 = $10
-                Total = £60
-            */
+            var largeParcel = result.Parcels[2];
+            largeParcel.ParcelSize.Should().Be(ParcelSize.Large);
+            largeParcel.ItemCost.Should().Be(15);
+            largeParcel.ExcessWeightCost.Should().Be(4);
+            largeParcel.SubTotal.Should().Be(19);
 
-            result.ParcelSize.Should().Be(ParcelSize.Heavy);
-            result.ItemCost.Should().Be(50);
-            result.ExcessWeightCost.Should().Be(10);
+            var xlParcel = result.Parcels[3];
+            xlParcel.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
+            xlParcel.ItemCost.Should().Be(25);
+            xlParcel.ExcessWeightCost.Should().Be(4);
+            xlParcel.SubTotal.Should().Be(29);
+
             result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(60);
+            result.TotalCost.Should().Be(67);
         }
 
         [Theory]
         [InlineData(15, ParcelSize.ExtraLarge, 35)]
         [InlineData(25, ParcelSize.Heavy, 50)]
-        public void GetParcelCost_ParcelExceedsLimit_ReturnsCheapestOption(decimal parcelWeight, ParcelSize expectedParcelSize, decimal expectedTotal)
+        public void ProcessShippingRequest_SingleParcelThatExceedsLimit_ReturnsCheapestOption(decimal parcelWeight, ParcelSize expectedParcelSize, decimal expectedTotal)
         {
             // Arrange
             var sut = new ParcelService();
-            var parcel = new Parcel
+            var parcels = new List<Parcel>
             {
-                Width = 100,
-                Height = 50.9M,
-                Depth = 50.9M,
-                WeightKg = parcelWeight
+                new Parcel
+                {
+                    Width = 100,
+                    Height = 50.9M,
+                    Depth = 50.9M,
+                    WeightKg = parcelWeight
+                }
             };
 
             // Act
-            var result = sut.GetParcelCost(parcel, false);
+            var result = sut.ProcessShippingRequest(parcels, false);
 
             // Assert
             /*
@@ -413,200 +352,297 @@ namespace FA_Courier_Kata.Tests
                 Total = $50
             */
 
-            result.ParcelSize.Should().Be(expectedParcelSize);
-            result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(expectedTotal);
-        }
-        [Fact]
-        public void GetParcelCost_AllDimensionsAreLessThan10_IsSmallParcel()
-        {
-            // Arrange
-            var sut = new ParcelService();
-            var parcel = new Parcel
-            {
-                Width = 9.9M,
-                Height = 9.9M,
-                Depth = 9.9M,
-                WeightKg = 1
-            };
-
-            // Act
-            var result = sut.GetParcelCost(parcel, false);
-
-            // Assert
-            result.ParcelSize.Should().Be(ParcelSize.Small);
-            result.ItemCost.Should().Be(3);
-            result.ExcessWeightCost.Should().Be(0);
-            result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(3);
+            var parcelOutput = result.Parcels[0];
+            parcelOutput.ParcelSize.Should().Be(expectedParcelSize);
+            parcelOutput.SubTotal.Should().Be(expectedTotal);
         }
 
         [Fact]
-        public void GetParcelCost_AllDimensionAreGreaterThanOrEqualTo10ButLessThan50_IsMediumParcel()
+        public void ProcessShippingRequest_SingleHeavyParcelExceedsLimitBy10kg_SubTotalIncludesExcessWeightCost()
         {
             // Arrange
             var sut = new ParcelService();
-            var parcel = new Parcel
+            var parcels = new List<Parcel>
             {
-                Width = 10,
-                Height = 35.9M,
-                Depth = 49.9M,
-                WeightKg = 3
+                new Parcel
+                {
+                    Width = 100,
+                    Height = 50.9M,
+                    Depth = 50.9M,
+                    WeightKg = 60
+                }
             };
 
             // Act
-            var result = sut.GetParcelCost(parcel, false);
+            var result = sut.ProcessShippingRequest(parcels, false);
 
             // Assert
-            result.ParcelSize.Should().Be(ParcelSize.Medium);
-            result.ItemCost.Should().Be(8);
-            result.ExcessWeightCost.Should().Be(0);
+            /*
+                Based on dimensions alone, the parcel matches the criteria of an XL parcel.
+                However, it would be cheaper for the customer as a heavy parcel
+
+                var parcel = new Parcel
+                {
+                    Width = 100,
+                    Height = 50.9M,
+                    Depth = 50.9M,
+                    WeightKg = 60
+                };
+
+                XL = $25
+                Weight limit = 10kg
+                Excess = 50kg
+                Excess cost = 50 * 2 = $100
+                Total = £125
+
+                Heavy = $50
+                Weight limit = 50kg
+                Excess = 10kg
+                Excess cost = 10 * 1 = $10
+                Total = £60
+            */
+
+            result.Parcels.Count.Should().Be(1);
+
+            var parcelOutput = result.Parcels[0];
+            parcelOutput.ParcelSize.Should().Be(ParcelSize.Heavy);
+            parcelOutput.ItemCost.Should().Be(50);
+            parcelOutput.ExcessWeightCost.Should().Be(10);
+            parcelOutput.SubTotal.Should().Be(60);
+
+            result.TotalCost.Should().Be(60);
             result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(8);
         }
 
         [Fact]
-        public void GetParcelCost_OneDimensionIsGreaterThanOrEqualTo10ButLessThan50_IsMediumParcel()
+        public void ProcessShippingRequest_SingleParcelAllDimensionsAreLessThan10_IsSmallParcel()
         {
             // Arrange
             var sut = new ParcelService();
-            var parcel = new Parcel
-            {
-                Width = 10,
-                Height = 9.9M,
-                Depth = 9.9M,
-                WeightKg = 3
+            var parcel = new List<Parcel> {
+                new Parcel
+                {
+                    Width = 9.9M,
+                    Height = 9.9M,
+                    Depth = 9.9M,
+                    WeightKg = 1
+                }
             };
 
             // Act
-            var result = sut.GetParcelCost(parcel, false);
+            var result = sut.ProcessShippingRequest(parcel, false);
 
             // Assert
-            result.ParcelSize.Should().Be(ParcelSize.Medium);
-            result.ItemCost.Should().Be(8);
-            result.ExcessWeightCost.Should().Be(0);
-            result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(8);
+            result.Parcels.Count.Should().Be(1);
+
+            var parcelOutput = result.Parcels[0];
+            parcelOutput.ParcelSize.Should().Be(ParcelSize.Small);
+            parcelOutput.ItemCost.Should().Be(3);
+            parcelOutput.ExcessWeightCost.Should().Be(0);
+            parcelOutput.SubTotal.Should().Be(3);
         }
 
         [Fact]
-        public void GetParcelCost_AllDimensionAreGreaterThanOrEqualTo50ButLessThan100_IsLargeParcel()
+        public void ProcessShippingRequest_SingleParcelAllDimensionAreGreaterThanOrEqualTo10ButLessThan50_IsMediumParcel()
         {
             // Arrange
             var sut = new ParcelService();
-            var parcel = new Parcel
+            var parcel = new List<Parcel>
             {
-                Width = 50,
-                Height = 75.9M,
-                Depth = 99.9M,
-                WeightKg = 6
+                new Parcel
+                {
+                    Width = 10,
+                    Height = 35.9M,
+                    Depth = 49.9M,
+                    WeightKg = 3
+                }
             };
 
             // Act
-            var result = sut.GetParcelCost(parcel, false);
+            var result = sut.ProcessShippingRequest(parcel, false);
 
             // Assert
-            result.ParcelSize.Should().Be(ParcelSize.Large);
-            result.ItemCost.Should().Be(15);
-            result.ExcessWeightCost.Should().Be(0);
-            result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(15);
+            result.Parcels.Count.Should().Be(1);
+
+            var parcelOutput = result.Parcels[0];
+            parcelOutput.ParcelSize.Should().Be(ParcelSize.Medium);
+            parcelOutput.ItemCost.Should().Be(8);
+            parcelOutput.ExcessWeightCost.Should().Be(0);
+            parcelOutput.SubTotal.Should().Be(8);
         }
 
         [Fact]
-        public void GetParcelCost_OneDimensionIsGreaterThanOrEqualTo50ButLessThan100_IsLargeParcel()
+        public void ProcessShippingRequest_SingleParcelOneDimensionIsGreaterThanOrEqualTo10ButLessThan50_IsMediumParcel()
         {
             // Arrange
             var sut = new ParcelService();
-            var parcel = new Parcel
+            var parcel = new List<Parcel>
             {
-                Width = 50,
-                Height = 49.9M,
-                Depth = 49.9M,
-                WeightKg = 6
+                new Parcel
+                {
+                    Width = 10,
+                    Height = 9.9M,
+                    Depth = 9.9M,
+                    WeightKg = 3
+                }
             };
 
             // Act
-            var result = sut.GetParcelCost(parcel, false);
+            var result = sut.ProcessShippingRequest(parcel, false);
 
             // Assert
-            result.ParcelSize.Should().Be(ParcelSize.Large);
-            result.ItemCost.Should().Be(15);
-            result.ExcessWeightCost.Should().Be(0);
-            result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(15);
+            result.Parcels.Count.Should().Be(1);
+
+            var parcelOutput = result.Parcels[0];
+            parcelOutput.ParcelSize.Should().Be(ParcelSize.Medium);
+            parcelOutput.ItemCost.Should().Be(8);
+            parcelOutput.ExcessWeightCost.Should().Be(0);
+            parcelOutput.SubTotal.Should().Be(8);
         }
 
         [Fact]
-        public void GetParcelCost_OneDimensionIsGreaterThan100_IsExtraLargeParcel()
+        public void ProcessShippingRequest_SingleParcelAllDimensionAreGreaterThanOrEqualTo50ButLessThan100_IsLargeParcel()
         {
             // Arrange
             var sut = new ParcelService();
-            var parcel = new Parcel
+            var parcel = new List<Parcel>
             {
-                Width = 101,
-                Height = 50.9M,
-                Depth = 50.9M,
-                WeightKg = 10
+                new Parcel
+                {
+                    Width = 50,
+                    Height = 75.9M,
+                    Depth = 99.9M,
+                    WeightKg = 6
+                }
             };
 
             // Act
-            var result = sut.GetParcelCost(parcel, false);
+            var result = sut.ProcessShippingRequest(parcel, false);
 
             // Assert
-            result.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
-            result.ItemCost.Should().Be(25);
-            result.ExcessWeightCost.Should().Be(0);
-            result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(25);
+            result.Parcels.Count.Should().Be(1);
+
+            var parcelOutput = result.Parcels[0];
+            parcelOutput.ParcelSize.Should().Be(ParcelSize.Large);
+            parcelOutput.ItemCost.Should().Be(15);
+            parcelOutput.ExcessWeightCost.Should().Be(0);
+            parcelOutput.SubTotal.Should().Be(15);
         }
 
         [Fact]
-        public void GetParcelCost_OneDimensionIsEqualTo100_IsExtraLargeParcel()
+        public void ProcessShippingRequest_SingleParcelOneDimensionIsGreaterThanOrEqualTo50ButLessThan100_IsLargeParcel()
         {
             // Arrange
             var sut = new ParcelService();
-            var parcel = new Parcel
+            var parcel = new List<Parcel>
             {
-                Width = 100,
-                Height = 50.9M,
-                Depth = 50.9M,
-                WeightKg = 10
+                new Parcel
+                {
+                    Width = 50,
+                    Height = 49.9M,
+                    Depth = 49.9M,
+                    WeightKg = 6
+                }
             };
 
             // Act
-            var result = sut.GetParcelCost(parcel, false);
+            var result = sut.ProcessShippingRequest(parcel, false);
 
             // Assert
-            result.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
-            result.ItemCost.Should().Be(25);
-            result.ExcessWeightCost.Should().Be(0);
-            result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(25);
+            result.Parcels.Count.Should().Be(1);
+
+            var parcelOutput = result.Parcels[0];
+            parcelOutput.ParcelSize.Should().Be(ParcelSize.Large);
+            parcelOutput.ItemCost.Should().Be(15);
+            parcelOutput.ExcessWeightCost.Should().Be(0);
+            parcelOutput.SubTotal.Should().Be(15);
         }
 
         [Fact]
-        public void GetParcelCost_AllDimensionAreGreaterThanOrEqualTo100_ItemCostIs25()
+        public void ProcessShippingRequest_SingleParcelOneDimensionIsGreaterThan100_IsExtraLargeParcel()
         {
             // Arrange
             var sut = new ParcelService();
-            var parcel = new Parcel
+            var parcel = new List<Parcel>
             {
-                Width = 100,
-                Height = 125.9M,
-                Depth = 199.9M,
-                WeightKg = 10
+                new Parcel
+                {
+                    Width = 101,
+                    Height = 50.9M,
+                    Depth = 50.9M,
+                    WeightKg = 10
+                }
             };
 
             // Act
-            var result = sut.GetParcelCost(parcel, false);
+            var result = sut.ProcessShippingRequest(parcel, false);
 
             // Assert
-            result.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
-            result.ItemCost.Should().Be(25);
-            result.ExcessWeightCost.Should().Be(0);
-            result.SpeedyShipping.Should().BeFalse();
-            result.TotalCost.Should().Be(25);
+            result.Parcels.Count.Should().Be(1);
+
+            var parcelOutput = result.Parcels[0];
+            parcelOutput.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
+            parcelOutput.ItemCost.Should().Be(25);
+            parcelOutput.ExcessWeightCost.Should().Be(0);
+            parcelOutput.SubTotal.Should().Be(25);
+        }
+
+        [Fact]
+        public void ProcessShippingRequest_SingleParcelOneDimensionIsEqualTo100_IsExtraLargeParcel()
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcel = new List<Parcel>
+            {
+                new Parcel
+                {
+                    Width = 100,
+                    Height = 50.9M,
+                    Depth = 50.9M,
+                    WeightKg = 10
+                }
+            };
+
+            // Act
+            var result = sut.ProcessShippingRequest(parcel, false);
+
+            // Assert
+            result.Parcels.Count.Should().Be(1);
+
+            var parcelOutput = result.Parcels[0];
+            parcelOutput.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
+            parcelOutput.ItemCost.Should().Be(25);
+            parcelOutput.ExcessWeightCost.Should().Be(0);
+            parcelOutput.SubTotal.Should().Be(25);
+        }
+
+        [Fact]
+        public void ProcessShippingRequest_SingleParcelAllDimensionAreGreaterThanOrEqualTo100_ItemCostIs25()
+        {
+            // Arrange
+            var sut = new ParcelService();
+            var parcel = new List<Parcel>
+            {
+                new Parcel
+                {
+                    Width = 100,
+                    Height = 125.9M,
+                    Depth = 199.9M,
+                    WeightKg = 10
+                }
+            };
+
+            // Act
+            var result = sut.ProcessShippingRequest(parcel, false);
+
+            // Assert
+            result.Parcels.Count.Should().Be(1);
+
+            var parcelOutput = result.Parcels[0];
+            parcelOutput.ParcelSize.Should().Be(ParcelSize.ExtraLarge);
+            parcelOutput.ItemCost.Should().Be(25);
+            parcelOutput.ExcessWeightCost.Should().Be(0);
+            parcelOutput.SubTotal.Should().Be(25);
         }
     }
 }

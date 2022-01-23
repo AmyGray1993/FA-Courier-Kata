@@ -19,11 +19,11 @@ namespace FA_Courier_Kata.Domain.Controllers
         }
 
         [HttpPost]
-        public List<string> Post([FromBody] Parcel parcel, [FromQuery][Required] bool speedyShipping)
+        public List<string> Post([FromBody] List<Parcel> parcels, [FromQuery][Required] bool speedyShipping)
         {
-            var parcelCost = _parcelService.GetParcelCost(parcel, speedyShipping);
+            var shippingRequest = _parcelService.ProcessShippingRequest(parcels, speedyShipping);
 
-            return _parcelService.GetPostageInvoice(parcelCost, speedyShipping);
+            return shippingRequest.PriceBreakdown;
         }
     }
 }

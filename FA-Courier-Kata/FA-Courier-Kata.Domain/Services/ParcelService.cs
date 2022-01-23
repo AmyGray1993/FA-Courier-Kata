@@ -8,6 +8,7 @@ namespace FA_Courier_Kata.Domain.Services
 {
     public class ParcelService : IParcelService
     {
+        private readonly int speedyShippingMultiplier = 2;
         private readonly int standardExcessWeightChargePerKg = 2;
         private readonly int heavyExcessWeightChargePerKg = 1;
         private readonly int heavyParcelBaseRate = 50;
@@ -16,24 +17,32 @@ namespace FA_Courier_Kata.Domain.Services
         {
         }
 
-        public List<string> GetPostageInvoice(ParcelCost parcelCost, bool speedyShipping)
+        public ShippingRequest ProcessShippingRequest(List<Parcel> parcels, bool speedyShipping)
         {
-            var output = new List<string>
-            {
-                $"{parcelCost.ParcelSize.GetDescription()}: ${parcelCost.ItemCost}."
-            };
+            var parcelCosts = new List<ParcelCost>();
+            var runningTotal = 0M;
 
-            if (speedyShipping)
+            foreach (var parcel in parcels)
             {
-                output.Add($"Speedy Shipping: ${parcelCost.TotalCost / parcelCost.SpeedyShippingMultiplier}.");
+                var parcelCost = GetParcelCost(parcel);
+                parcelCosts.Add(parcelCost);
+                runningTotal += parcelCost.SubTotal;
             }
 
-            output.Add($"Total Cost: ${parcelCost.TotalCost}.");
+            var shippingRequest = new ShippingRequest()
+            {
+                Parcels = parcelCosts,
+                SpeedyShipping = speedyShipping,
+                TotalCost = speedyShipping ? runningTotal * speedyShippingMultiplier : runningTotal
+            };
 
-            return output;
+            shippingRequest.PriceBreakdown = GetPriceBreakdown(shippingRequest);
+
+            return shippingRequest;
         }
 
-        public ParcelCost GetParcelCost(Parcel parcel, bool speedyShipping)
+        #region Private Methods
+        private ParcelCost GetParcelCost(Parcel parcel)
         {
             var parcelSize = GetParcelSize(parcel);
 
@@ -43,14 +52,13 @@ namespace FA_Courier_Kata.Domain.Services
                 ParcelSize = parcelSize,
                 ItemCost = CalculateParcelSizeCost(parcelSize),
                 ExcessWeightCost = CalculateExcessWeightCost(parcelSize, parcel.WeightKg),
-                SpeedyShipping = speedyShipping
             };
 
-            if (basicParcelCost.TotalCost > heavyParcelBaseRate)
+            if (basicParcelCost.SubTotal > heavyParcelBaseRate)
             {
-                var heavyParcelCost = CalculateHeavyParcelRate(parcel, speedyShipping);
+                var heavyParcelCost = CalculateHeavyParcelRate(parcel);
 
-                return heavyParcelCost.TotalCost < basicParcelCost.TotalCost
+                return heavyParcelCost.SubTotal < basicParcelCost.SubTotal
                     ? heavyParcelCost
                     : basicParcelCost;
             }
@@ -116,7 +124,7 @@ namespace FA_Courier_Kata.Domain.Services
                 : 0;
         }
 
-        private ParcelCost CalculateHeavyParcelRate(Parcel parcel, bool speedyShipping)
+        private ParcelCost CalculateHeavyParcelRate(Parcel parcel)
         {
             return new ParcelCost
             {
@@ -124,8 +132,27 @@ namespace FA_Courier_Kata.Domain.Services
                 ParcelSize = ParcelSize.Heavy,
                 ItemCost = CalculateParcelSizeCost(ParcelSize.Heavy),
                 ExcessWeightCost = CalculateExcessWeightCost(ParcelSize.Heavy, parcel.WeightKg),
-                SpeedyShipping = speedyShipping
             };
         }
+
+        private List<string> GetPriceBreakdown(ShippingRequest shippingRequest)
+        {
+            var priceBreakdown = new List<string>();
+
+            foreach (var parcel in shippingRequest.Parcels)
+            {
+                priceBreakdown.Add($"{parcel.ParcelSize.GetDescription()}: ${parcel.SubTotal}.");
+            }
+
+            if (shippingRequest.SpeedyShipping)
+            {
+                priceBreakdown.Add($"Speedy Shipping: ${shippingRequest.TotalCost / speedyShippingMultiplier}.");
+            }
+
+            priceBreakdown.Add($"Total Cost: ${shippingRequest.TotalCost}.");
+
+            return priceBreakdown;
+        }
+        #endregion
     }
 }
